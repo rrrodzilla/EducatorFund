@@ -1,0 +1,432 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Line Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.23.0/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.js"></script>
+    <script src="node_modules/chartjs-plugin-annotation/chartjs-plugin-annotation.js"></script>
+    <script src="node_modules/chartjs-plugin-style/dist/chartjs-plugin-style.js"></script>
+    <script src="utils.js"></script>
+    <style>
+        canvas {
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="width:75%;">
+        <canvas id="readings"></canvas>
+        <canvas id="canvas"></canvas>
+    </div>
+    <script>
+        var timeFormat = 'MM/DD/YYYY HH:mm';
+        var annotationAlpha = 1;
+        var darkenRatio = 0;
+        function newDate(days) {
+            return moment().add(days, 'd').toDate();
+        }
+
+        function newDateString(days) {
+            return moment().add(days, 'd').format(timeFormat);
+        }
+
+        var color = Chart.helpers.color;
+        function lighten(c) {
+            return c.lighten(.3);
+        }
+        var stages = {
+            critical: {
+                color: color('#800080'),
+            },
+            stage2: {
+                color: color('#BA3A02'),
+            },
+            stage1: {
+                color: color('#FFB600'),
+            },
+            pre: {
+                color: color('#FFEC00'),
+            },
+            normal: {
+                color: color('#6B8E23'),
+            },
+            low: {
+                color: color('#3A7CCC'),
+            }
+        };
+        //        console.log(stages.stage2.lighter.lighten(.1).hexString());
+        var pointBackgroundColors = [];
+        var pointBorderColors = [];
+
+        var scatter_config = {
+            type: 'bubble',
+            data: {
+                datasets: [
+                    {
+                        radius: 6,
+                        backgroundColor: pointBackgroundColors,
+                        data: [
+                            { x: 117, y: 182, r: 5 },
+                            { x: 123, y: 173, r: 5 },
+                            { x: 119, y: 174, r: 5 },
+                            { x: 106, y: 141, r: 8 },
+                            { x: 104, y: 162, r: 5 },
+                            { x: 105, y: 158, r: 5 },
+                            { x: 105, y: 155, r: 5 },
+                            { x: 96, y: 145, r: 8 },
+                            { x: 113, y: 160, r: 5 },                            
+                            { x: 109, y: 160, r: 8 },
+                            { x: 103, y: 144, r: 5 },
+                            { x: 105, y: 154, r: 5 },
+                            { x: 98, y: 141, r: 8 },
+                            { x: 93, y: 139, r: 5 },
+                            { x: 91, y: 133, r: 8 },
+                            { x: 80, y: 123, r: 5 },
+                            { x: 85, y: 127, r: 5 }
+                        ],
+                    }, {
+                        label: 'Hypertensive Crisis',
+                        backgroundColor: stages.critical.color.rgbaString(),
+                        borderColor: 'rgba(255,255,255,0)',
+                        borderWidth: 0,
+                    }, {
+                        label: 'High Blood Pressure - Stage 2',
+                        backgroundColor: stages.stage2.color.rgbaString(),
+                        borderColor: stages.stage2.color.rgbaString(),
+                        borderWidth: 0,
+                    },
+                    {
+                        label: 'High Blood Pressure - Stage 1',
+                        backgroundColor: stages.stage1.color.rgbaString(),
+                        borderColor: stages.stage1.color.rgbaString(),
+                        borderWidth: 0
+                    },
+                    {
+                        label: 'Pre-Hypertension',
+                        backgroundColor: stages.pre.color.rgbaString(),
+                        borderWidth: 0,
+                        borderColor: stages.pre.color.rgbaString()
+                    },
+                    {
+                        label: 'Normal Blood Pressure',
+                        backgroundColor: stages.normal.color.rgbaString(),
+                        borderWidth: 0,
+                        borderColor: stages.normal.color.rgbaString()
+                    },
+                    {
+                        label: 'Low Blood Pressure',
+                        backgroundColor: stages.low.color.rgbaString(),
+                        borderWidth: 0,
+                        borderColor: stages.low.color.rgbaString()
+                    },
+                ]
+            },
+            options: {
+                title: {
+                    text: 'Chart.js Time Scale'
+                },
+                scales: {
+                    xAxes: [{
+                        id: 'diastolic',
+                        gridLines: { display: false },
+                        ticks: {
+                            min: 40,
+                            max: 130
+                        },
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Diastolic / mmHg',
+                            fontSize: '20'
+                        }
+                    }],
+                    yAxes: [{
+                        id: 'systolic',
+                        gridLines: { display: false },
+                        ticks: {
+                            min: 60,
+                            max: 200
+                        },
+                        scaleLabel: {
+                            display: true,
+                            fontSize: '20',
+                            labelString: 'Systolic / mmHg',
+                        }
+                    }]
+                },
+                annotation: {
+                    // Defines when the annotations are drawn.
+                    // This allows positioning of the annotation relative to the other
+                    // elements of the graph.
+                    //
+                    // Should be one of: afterDraw, afterDatasetsDraw, beforeDatasetsDraw
+                    // See http://www.chartjs.org/docs/#advanced-usage-creating-plugins
+                    drawTime: 'beforeDatasetsDraw', // (default)
+
+                    // Mouse events to enable on each annotation.
+                    // Should be an array of one or more browser-supported mouse events
+                    // See https://developer.mozilla.org/en-US/docs/Web/Events
+                    events: ['click'],
+
+                    // Double-click speed in ms used to distinguish single-clicks from
+                    // double-clicks whenever you need to capture both. When listening for
+                    // both click and dblclick, click events will be delayed by this
+                    // amount.
+                    dblClickSpeed: 350, // ms (default)
+
+                    // Array of annotation configuration objects
+                    // See below for detailed descriptions of the annotation options
+                    annotations: [
+                        {
+                            drawTime: 'beforeDatasetsDraw', // overrides annotation.drawTime if set
+                            id: 'hypertensive-crisis', // optional
+                            type: 'box',
+                            // ID of the X scale to bind onto
+                            xScaleID: 'diastolic',
+                            // ID of the Y scale to bind onto
+                            yScaleID: 'systolic',
+                            // Left edge of the box. in units along the x axis
+
+                            // Top edge of the box in units along the y axis
+
+                            // Bottom edge of the box
+                            xMin: 0,
+                            yMin: 0,
+                            borderColor: '#800080',
+                            backgroundColor: color('#800080').darken(darkenRatio).alpha(annotationAlpha).rgbString(),
+                            borderWidth: 1,
+                        },
+                        {
+                            drawTime: 'beforeDatasetsDraw', // overrides annotation.drawTime if set
+                            id: 'stage-2', // optional
+                            type: 'box',
+                            // ID of the X scale to bind onto
+                            xScaleID: 'diastolic',
+                            // ID of the Y scale to bind onto
+                            yScaleID: 'systolic',
+                            // Left edge of the box. in units along the x axis
+
+                            // Top edge of the box in units along the y axis
+
+                            // Bottom edge of the box
+                            xMax: 120,
+                            yMax: 180,
+                            borderColor: '#BA3A02',
+                            backgroundColor: color('#BA3A02').darken(darkenRatio).alpha(annotationAlpha).rgbString(),
+                            borderWidth: 1,
+                        },
+                        {
+                            drawTime: 'beforeDatasetsDraw', // overrides annotation.drawTime if set
+                            id: 'stage-1', // optional
+                            type: 'box',
+                            // ID of the X scale to bind onto
+                            xScaleID: 'diastolic',
+                            // ID of the Y scale to bind onto
+                            yScaleID: 'systolic',
+                            // Left edge of the box. in units along the x axis
+
+                            // Top edge of the box in units along the y axis
+
+                            // Bottom edge of the box
+                            xMax: 90,
+                            yMax: 140,
+                            borderColor: '#FFB600',
+                            backgroundColor: color('#FFB600').darken(darkenRatio).alpha(annotationAlpha).rgbString(),
+                            borderWidth: 1,
+                        },
+                        {
+                            drawTime: 'beforeDatasetsDraw', // overrides annotation.drawTime if set
+                            id: 'pre-hypertension', // optional
+                            type: 'box',
+                            // ID of the X scale to bind onto
+                            xScaleID: 'diastolic',
+                            // ID of the Y scale to bind onto
+                            yScaleID: 'systolic',
+                            // Left edge of the box. in units along the x axis
+
+                            // Top edge of the box in units along the y axis
+
+                            // Bottom edge of the box
+                            xMax: 80,
+                            yMax: 130,
+                            borderColor: '#FFEC00',
+                            backgroundColor: color('#FFEC00').darken(darkenRatio).alpha(annotationAlpha).rgbString(),
+                            borderWidth: 1,
+                        },
+                        {
+                            drawTime: 'beforeDatasetsDraw', // overrides annotation.drawTime if set
+                            id: 'normal', // optional
+                            type: 'box',
+                            // ID of the X scale to bind onto
+                            xScaleID: 'diastolic',
+                            // ID of the Y scale to bind onto
+                            yScaleID: 'systolic',
+                            // Left edge of the box. in units along the x axis
+
+                            // Top edge of the box in units along the y axis
+
+                            // Bottom edge of the box
+                            xMax: 80,
+                            yMax: 120,
+                            borderColor: '#6B8E23',
+                            backgroundColor: color('#6B8E23').darken(darkenRatio).alpha(annotationAlpha).rgbString(),
+                            borderWidth: 1,
+                        },
+                        {
+                            drawTime: 'beforeDatasetsDraw', // overrides annotation.drawTime if set
+                            id: 'low', // optional
+                            type: 'box',
+                            // ID of the X scale to bind onto
+                            xScaleID: 'diastolic',
+                            // ID of the Y scale to bind onto
+                            yScaleID: 'systolic',
+                            // Left edge of the box. in units along the x axis
+
+                            // Top edge of the box in units along the y axis
+
+                            // Bottom edge of the box
+                            xMax: 60,
+                            yMax: 89,
+                            borderWidth: 1,
+                            borderColor: '#3A7CCC',
+                            backgroundColor: color('#3A7CCC').darken(darkenRatio).alpha(annotationAlpha).rgbString()
+                        }
+                    ]
+                }
+            }
+        };
+        var config = {
+            type: 'bar',
+            data: {
+                labels: [ // Date Objects
+                    moment().toDate(),
+                    moment().add(6, 'h').toDate(),
+                    moment().add(12, 'h').toDate(),
+                ],
+                datasets: [{
+                    label: 'Systolic/mmHg',
+                    type: 'line',
+                    fill: false,
+                    backgroundColor: color(window.chartColors.red).alpha(0.5).rgbString(),
+                    borderColor: window.chartColors.red,
+                    data: [
+                        182,
+                        173,
+                        174
+                    ],
+                }, {
+                    label: 'Diastolic/mmHg',
+                    fill: false,
+                    type: 'line',
+                    backgroundColor: color(window.chartColors.blue).alpha(0.5).rgbString(),
+                    borderColor: window.chartColors.blue,
+                    data: [
+                        117,
+                        123,
+                        119
+                    ],
+                }, {
+                    label: 'PULSE/min',
+                    backgroundColor: color(window.chartColors.green).alpha(0.5).rgbString(),
+                    borderColor: window.chartColors.green,
+                    fill: false,
+                    type: 'bubble',
+                    radius: 10,
+                    data: [
+                        84,
+                        74,
+                        73
+                    ],
+                }]
+            },
+            options: {
+                title: {
+                    text: 'Blood Pressure',
+                    display: true
+                },
+                scales: {
+                    xAxes: [{
+                        type: 'time',
+                        time: {
+                            format: timeFormat,
+                            tooltipFormat: 'll HH:mm',
+                            unit: 'day'
+                        },
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Date'
+                        }
+                    }],
+                    yAxes: [{
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'value',
+                            stacked: true
+                        }
+                    }]
+                },
+            }
+        };
+
+
+
+
+        function getBubbleColor(pointObj) {
+
+            var alpha = (pointObj.r < 8) ? 1 : 1;
+            //critical
+            var lightenRatio = (pointObj.r < 8) ? -.5 : 1.1;
+            var darkenRatio = (pointObj.r < 8) ? .1 : 0;
+            if (pointObj.x > 120 || pointObj.y > 180) {
+
+                return stages.critical.color.clone().lighten(lightenRatio).alpha(alpha).rgbaString();
+            }
+            //stage 2
+            if (pointObj.x > 90 || pointObj.y > 140) {
+                return stages.stage2.color.clone().lighten(lightenRatio).alpha(alpha).rgbaString();
+            }
+            //stage 1
+            if (pointObj.x >= 80 || pointObj.y > 130) {
+                //                console.log(stages.stage1.lighter.hexString());
+                return stages.stage1.color.clone().lighten(lightenRatio).alpha(alpha).rgbaString();
+            }
+            //pre
+            if (pointObj.x > 60 && pointObj.y > 120) {
+                return stages.pre.color.clone().lighten(lightenRatio).alpha(alpha).rgbaString();
+            }
+            //normal
+            if (pointObj.x > 60 || pointObj.y > 90) {
+                return stages.normal.color.clone().lighten(lightenRatio).alpha(alpha).rgbaString();
+            }
+            //low
+            if (pointObj.x > 40 || pointObj.y > 60) {
+                return stages.low.color.clone().lighten(lightenRatio).alpha(alpha).rgbaString();
+            }
+        }
+
+        window.onload = function () {
+            var ctx = document.getElementById('readings').getContext('2d');
+            window.myReadings = new Chart(ctx, scatter_config);
+            for (i = 0; i < window.myReadings.data.datasets[0].data.length; i++) {
+                let c = getBubbleColor(window.myReadings.data.datasets[0].data[i]);
+                //console.log(c);
+                pointBackgroundColors.push(c);
+                //                pointBorderColors.push(((window.myReadings.data.datasets[0].data[i]).r < 8) ? 'rgba(169,169,169,.1)' : 'rgba(169,169,169,.3)');
+            }
+            window.myReadings.update();
+
+            // var ctx = document.getElementById('canvas').getContext('2d');
+            // window.myLine = new Chart(ctx, config);
+
+        };
+
+
+        var colorNames = Object.keys(window.chartColors);
+
+    </script>
+</body>
+
+</html>
